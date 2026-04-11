@@ -4,11 +4,13 @@ import cakir.saga_orchestrator.model.dto.OrderEvent;
 import cakir.saga_orchestrator.model.dto.PaymentCommand;
 import cakir.saga_orchestrator.model.dto.StockCommand;
 import cakir.saga_orchestrator.model.dto.StockEvent;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
+@Slf4j
 @Component
 public class SagaOrchestratorMessagePublisher {
     private final StreamBridge streamBridge;
@@ -26,32 +28,44 @@ public class SagaOrchestratorMessagePublisher {
         StockCommand command = new StockCommand(event.getOrderId(), "RESERVE_STOCK",
                 event.getProductId(), event.getQuantity(), event.getUserId());
         streamBridge.send(STOCK_OUT, command);
+
+        log.info(STOCK_OUT + "RESERVE_STOCK command sent for Order ID: {}", event.getOrderId());
     }
 
     public void sendStockReleaseCommand(Long orderId) {
         StockCommand command = new StockCommand(orderId, "RELEASE_STOCK");
         streamBridge.send(STOCK_OUT, command);
+
+        log.info(STOCK_OUT + "RELEASE_STOCK command sent for Order ID: {}", orderId);
     }
 
     public void sendPaymentCommand(StockEvent event) {
         PaymentCommand command = new PaymentCommand(event.getOrderId(), event.getUserId(),
                 event.getPrice(), "PROCESS_PAYMENT");
         streamBridge.send(PAYMENT_OUT, command);
+
+        log.info(PAYMENT_OUT + "PROCESS_PAYMENT command sent for Order ID: {}", event.getOrderId());
     }
 
     public void sendPaymentFailCommand(Long orderId, BigDecimal price) {
         OrderEvent command = new OrderEvent(orderId, "ORDER_FAILED", price);
         streamBridge.send(ORDER_RESPONSE_OUT, command);
+
+        log.info(ORDER_RESPONSE_OUT + "ORDER_FAILED command sent for Order ID: {}", orderId);
     }
 
     public void sendOrderCompleteCommand(Long orderId, BigDecimal price) {
         OrderEvent command = new OrderEvent(orderId, "ORDER_COMPLETED", price);
         streamBridge.send(ORDER_RESPONSE_OUT, command);
+
+        log.info(ORDER_RESPONSE_OUT + "ORDER_COMPLETED command sent for Order ID: {}", orderId);
     }
 
     public void sendOrderCancelCommand(Long orderId) {
         OrderEvent command = new OrderEvent(orderId, "ORDER_CANCELLED");
         streamBridge.send(ORDER_RESPONSE_OUT, command);
+
+        log.info(ORDER_RESPONSE_OUT + "ORDER_CANCELLED command sent for Order ID: {}", orderId);
     }
 
 }

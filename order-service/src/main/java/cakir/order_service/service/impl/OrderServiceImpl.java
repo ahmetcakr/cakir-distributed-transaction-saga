@@ -6,8 +6,10 @@ import cakir.order_service.model.entity.OrderEntity;
 import cakir.order_service.model.enums.OrderStatus;
 import cakir.order_service.repository.OrderRepository;
 import cakir.order_service.service.OrderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class OrderServiceImpl implements OrderService {
 
@@ -29,6 +31,7 @@ public class OrderServiceImpl implements OrderService {
         orderEntity.setStatus(OrderStatus.PENDING);
 
         OrderEntity savedOrder = orderRepository.save(orderEntity);
+        log.info("Order created with ID: {}", savedOrder.getId());
 
         orderMessagePublisher.publishOrderCreatedMessage(savedOrder);
 

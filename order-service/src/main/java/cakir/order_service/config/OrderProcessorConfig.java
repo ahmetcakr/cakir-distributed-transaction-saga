@@ -3,32 +3,34 @@ package cakir.order_service.config;
 import cakir.order_service.model.dto.OrderEvent;
 import cakir.order_service.model.enums.OrderStatus;
 import cakir.order_service.repository.OrderRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.function.Consumer;
 
+@Slf4j
 @Configuration
 public class OrderProcessorConfig {
 
     @Bean
     public Consumer<OrderEvent> orderFinalizer(OrderRepository repository) {
         return event -> {
-            System.out.println("Received last event for orderId: " + event.getOrderId() + ", status: " + event.getOrderStatus());
-
             repository.findById(event.getOrderId()).ifPresent(order -> {
                 if ("ORDER_COMPLETED".equals(event.getOrderStatus())) {
                     order.setStatus(OrderStatus.COMPLETED);
                     order.setPrice(event.getPrice());
-                    System.out.println("Sipariş başarıyla COMPLETED yapıldı.");
+
+                    log.info("ORDER_COMPLETED event received for orderId: {}, price: {}", event.getOrderId(), event.getPrice());
                 } else if ("ORDER_CANCELLED".equals(event.getOrderStatus())) {
                     order.setStatus(OrderStatus.CANCELLED);
-                    System.out.println("Sipariş iptal durumuna (CANCELLED) çekildi.");
+                    System.out.println("ORDER_CANCELLED event received, order status set to CANCELLED.");
                 } else if ("ORDER_FAILED".equals(event.getOrderStatus())) {
                     order.setStatus(OrderStatus.FAILED);
-                    System.out.println("Sipariş başarısız durumuna (FAILED) çekildi.");
+                    System.out.println("ORDER_FAILED event received, order status set to FAILED.");
                 } else {
-                    System.out.println("Bilinmeyen sipariş durumu: " + event.getOrderStatus());
+                    order.setStatus(OrderStatus.FAILED);
+                    System.out.println("Unknown order status received: " + event.getOrderStatus());
                 }
 
                 repository.save(order);

@@ -4,6 +4,7 @@ import cakir.payment_service.model.dto.PaymentCommand;
 import cakir.payment_service.model.entity.PaymentEntity;
 import cakir.payment_service.repository.PaymentRepository;
 import cakir.payment_service.service.PaymentService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import java.math.BigDecimal;
 import java.util.function.Consumer;
 
+@Slf4j
 @Configuration
 public class PaymentProcessorConfig {
 
@@ -23,8 +25,8 @@ public class PaymentProcessorConfig {
     @Bean
     public Consumer<PaymentCommand> paymentProcessor() {
         return command -> {
-            System.out.println("Şeften ödeme emri geldi: Order ID: " + command.getOrderId());
-            
+            log.info(command.getAction() + " command received");
+
             if ("PROCESS_PAYMENT".equals(command.getAction())) {
                 paymentService.processPayment(command);
             } else if ("REFUND_PAYMENT".equals(command.getAction())) {

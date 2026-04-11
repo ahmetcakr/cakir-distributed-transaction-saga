@@ -2,16 +2,16 @@ package cakir.stock_service.service.impl;
 
 import cakir.stock_service.messaging.StockMessagePublisher;
 import cakir.stock_service.model.dto.StockCommand;
-import cakir.stock_service.model.dto.StockEvent;
 import cakir.stock_service.model.entity.StockEntity;
 import cakir.stock_service.repository.StockRepository;
 import cakir.stock_service.service.StockService;
 import jakarta.transaction.Transactional;
-import org.springframework.cloud.stream.function.StreamBridge;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
+@Slf4j
 @Service
 public class StockServiceImpl implements StockService {
     private final StockRepository stockRepository;
@@ -37,13 +37,13 @@ public class StockServiceImpl implements StockService {
             return;
         }
 
-        System.out.println("Stok rezerve ediliyor... Order ID: " + command.getOrderId());
-
         BigDecimal totalAmount = stockEntity.getSingleUnitPrice().multiply(BigDecimal.valueOf(command.getQuantity()));
 
         Integer newRemainingStock = stockEntity.getRemainingStock() - command.getQuantity();
         stockEntity.setRemainingStock(newRemainingStock);
         stockRepository.save(stockEntity);
+
+        log.info("Stock reserved. Order ID: {}, Product ID: {}, Quantity: {}, Remaining Stock: {}", command.getOrderId(), command.getProductId(), command.getQuantity(), newRemainingStock);
 
         publisher.publishStockReserved(command.getOrderId(), totalAmount, command.getUserId());
     }
@@ -54,18 +54,17 @@ public class StockServiceImpl implements StockService {
         StockEntity stockEntity = stockRepository.findByProductId(command.getProductId()).orElse(null);
 
         if (stockEntity == null) {
-            System.out.println("Ürün bulunamadı. Order ID: " + command.getOrderId());
             publisher.publishStockError(command.getOrderId(), "STOCK_NOT_FOUND");
             return;
         }
-
-        System.out.println("Stok serbest bırakılıyor... Order ID: " + command.getOrderId());
 
         BigDecimal totalAmount = stockEntity.getSingleUnitPrice().multiply(BigDecimal.valueOf(command.getQuantity()));
 
         Integer newRemainingStock = stockEntity.getRemainingStock() + command.getQuantity();
         stockEntity.setRemainingStock(newRemainingStock);
         stockRepository.save(stockEntity);
+
+        log.info("Stock released. Order ID: {}, Product ID: {}, Quantity: {}, Remaining Stock: {}", command.getOrderId(), command.getProductId(), command.getQuantity(), newRemainingStock);
 
         publisher.publishStockReleased(command.getOrderId(), totalAmount, command.getUserId());
     }

@@ -1,6 +1,28 @@
 server:
   port: 6004
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,prometheus,zipkin"
+  observations:
+    annotations:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+    brave:
+      span-handler:
+        enabled: true
+  zipkin:
+    tracing:
+      endpoint: "http://localhost:9411/api/v2/spans"
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
 spring:
   application:
     name: stock-service
@@ -26,5 +48,4 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-
 

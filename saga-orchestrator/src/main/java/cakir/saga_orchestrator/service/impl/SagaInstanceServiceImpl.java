@@ -1,14 +1,13 @@
 package cakir.saga_orchestrator.service.impl;
 
 import cakir.saga_orchestrator.messaging.SagaOrchestratorMessagePublisher;
-import cakir.saga_orchestrator.model.dto.OrderEvent;
-import cakir.saga_orchestrator.model.dto.StockCommand;
 import cakir.saga_orchestrator.model.entity.SagaInstanceEntity;
 import cakir.saga_orchestrator.repository.SagaInstanceRepository;
 import cakir.saga_orchestrator.service.SagaInstanceService;
-import org.springframework.cloud.stream.function.StreamBridge;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class SagaInstanceServiceImpl implements SagaInstanceService {
     private final SagaInstanceRepository sagaInstanceRepository;
@@ -24,6 +23,8 @@ public class SagaInstanceServiceImpl implements SagaInstanceService {
     public void saveSagaState(Long orderId, String state, String status) {
         SagaInstanceEntity instance = new SagaInstanceEntity(orderId, state, status);
         sagaInstanceRepository.save(instance);
+
+        log.info("Saga durumu kaydedildi -> Order: {} | State: {} | Status: {}", orderId, state, status);
     }
 
     @Override
@@ -32,7 +33,7 @@ public class SagaInstanceServiceImpl implements SagaInstanceService {
                 .orElse(new SagaInstanceEntity(orderId));
 
         if ("SUCCESS".equals(sagaInstance.getSagaStatus()) || "FAILED".equals(sagaInstance.getSagaStatus())) {
-            System.out.println("LOG: " + orderId + " zaten mühürlenmiş, eski mesaj pas geçiliyor.");
+            log.info("Saga zaten tamamlanmış veya başarısız durumda. Güncelleme atlandı -> Order: {} | Current Status: {}", orderId, sagaInstance.getSagaStatus());
             return;
         }
 
@@ -40,7 +41,8 @@ public class SagaInstanceServiceImpl implements SagaInstanceService {
         sagaInstance.setSagaStatus(result);
 
         sagaInstanceRepository.save(sagaInstance);
-        System.out.println("Saga durumu güncellendi -> Order: " + orderId + " | State: " + lastState + " | Status: " + result);
+
+        log.info("Saga durumu güncellendi -> Order: {} | Last State: {} | Result: {}", orderId, lastState, result);
     }
 
     @Override
@@ -49,7 +51,7 @@ public class SagaInstanceServiceImpl implements SagaInstanceService {
 
         sagaOrchestratorMessagePublisher.sendStockReleaseCommand(orderId);
 
-        System.out.println("Telafi işlemi başlatıldı: Stok iadesi emri gönderildi. Order: " + orderId);
+        log.info("Telafi işlemleri başlatıldı -> Order: {}", orderId);
 
         sagaOrchestratorMessagePublisher.sendOrderCancelCommand(orderId);
     }

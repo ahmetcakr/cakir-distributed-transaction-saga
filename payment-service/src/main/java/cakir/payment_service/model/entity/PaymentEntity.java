@@ -2,6 +2,8 @@ package cakir.payment_service.model.entity;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "payment")
 public class PaymentEntity {
@@ -11,7 +13,7 @@ public class PaymentEntity {
 
     private Long userId;
 
-    private Double balance;
+    private BigDecimal balance;
 
     public Long getId() {
         return id;
@@ -29,11 +31,11 @@ public class PaymentEntity {
         this.userId = userId;
     }
 
-    public Double getBalance() {
+    public BigDecimal getBalance() {
         return balance;
     }
 
-    public void setBalance(Double balance) {
+    public void setBalance(BigDecimal balance) {
         this.balance = balance;
     }
 }

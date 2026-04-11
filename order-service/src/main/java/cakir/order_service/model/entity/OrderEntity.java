@@ -3,6 +3,8 @@ package cakir.order_service.model.entity;
 import cakir.order_service.model.enums.OrderStatus;
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "orders")
 public class OrderEntity {
@@ -15,10 +17,20 @@ public class OrderEntity {
 
     private Integer quantity;
 
-    private Double price;
+    private BigDecimal price;
     
     @Enumerated(EnumType.STRING)
     private OrderStatus status; // PENDING, COMPLETED, CANCELLED
+
+    private Long userId;
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
 
     public Long getId() {
         return id;
@@ -44,11 +56,11 @@ public class OrderEntity {
         this.quantity = quantity;
     }
 
-    public Double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(Double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 

@@ -1,4 +1,4 @@
-package cakir.payment_service.model.dto;
+package cakir.saga_orchestrator.model.dto;
 
 import java.math.BigDecimal;
 

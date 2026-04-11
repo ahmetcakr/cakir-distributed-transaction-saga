@@ -1,0 +1,31 @@
+server:
+  port: 6001
+
+spring:
+  application:
+    name: order-service
+  cloud:
+    function:
+      definition: orderFinalizer # buraya orderSource yazmadık çünkü orderSource sadece event yayınlayacak, herhangi bir event dinlemeyecek
+    stream:
+      bindings:
+        orderSource-out-0:
+          destination: order-events
+        orderFinalizer-in-0:
+          destination: order-status-updates
+          group: order-service-group
+      kafka:
+        binder:
+          brokers: localhost:9092
+        bindings:
+          orderFinalizer-in-0:
+            consumer:
+              startOffset: earliest
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/order_db
+    username: user
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: update

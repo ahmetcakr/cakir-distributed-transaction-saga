@@ -1,0 +1,30 @@
+server:
+  port: 6004
+
+spring:
+  application:
+    name: stock-service
+  cloud:
+    function:
+      definition: stockProcessor
+    stream:
+      bindings:
+        stockProcessor-in-0:
+          content-type: application/json
+          destination: stock-commands
+          group: stock-service-group
+        stockResponse-out-0:
+          destination: stock-events
+      kafka:
+        binder:
+          brokers: localhost:9092
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/stock_db
+    username: user
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+

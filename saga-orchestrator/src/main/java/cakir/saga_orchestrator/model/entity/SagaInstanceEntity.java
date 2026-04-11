@@ -14,6 +14,19 @@ public class SagaInstanceEntity {
 
     private String sagaStatus;
 
+    public SagaInstanceEntity() {
+    }
+
+    public SagaInstanceEntity(Long orderId) {
+        this.orderId = orderId;
+    }
+
+    public SagaInstanceEntity(Long orderId, String lastState, String sagaStatus) {
+        this.orderId = orderId;
+        this.lastState = lastState;
+        this.sagaStatus = sagaStatus;
+    }
+
     public Long getOrderId() {
         return orderId;
     }

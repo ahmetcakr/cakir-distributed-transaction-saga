@@ -1,0 +1,49 @@
+server:
+  port: 6003
+
+spring:
+  application:
+    name: saga-orchestrator
+  datasource:
+    url: jdbc:postgresql://localhost:5432/saga_db
+    username: user
+    password: password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  cloud:
+    function:
+      definition: orderProcessor;stockResponseProcessor;paymentResponseProcessor
+    stream:
+      bindings:
+        #ORDER
+        orderProcessor-in-0:
+          destination: order-events
+          group: saga-order-group
+
+        #STOCK
+        stockResponseProcessor-in-0:
+          destination: stock-events
+          group: saga-stock-group
+
+        #PAYMENT
+        paymentResponseProcessor-in-0:
+          destination: payment-events
+          group: saga-payment-group
+
+        orderResponse-out-0:
+          destination: order-status-updates
+        stock-out-0:
+          destination: stock-commands
+        payment-out-0:
+          destination: payment-commands
+      kafka:
+        binder:
+          brokers: localhost:9092
+        bindings:
+          stockResponseProcessor-in-0:
+            consumer:
+              startOffset: earliest

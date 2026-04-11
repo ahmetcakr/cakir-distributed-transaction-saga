@@ -3,18 +3,28 @@ package cakir.stock_service.model.dto;
 
 public class StockCommand {
     private Long orderId;
+    private String action;
     private String productId;
     private Integer quantity;
-    private String action;
+    private Long userId;
 
     public StockCommand() {
     }
 
-    public StockCommand(Long orderId, String productId, Integer quantity, String action) {
+    public StockCommand(Long orderId, String action, String productId, Integer quantity, Long userId) {
         this.orderId = orderId;
+        this.action = action;
         this.productId = productId;
         this.quantity = quantity;
-        this.action = action;
+        this.userId = userId;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public Long getOrderId() {

@@ -1,15 +1,17 @@
 package cakir.payment_service.model.dto;
 
+import java.math.BigDecimal;
+
 public class PaymentCommand {
     private Long orderId;
     private Long userId;
-    private Double amount;
+    private BigDecimal amount;
     private String action;
 
     public PaymentCommand() {
     }
 
-    public PaymentCommand(Long orderId, Long userId, Double amount, String action) {
+    public PaymentCommand(Long orderId, Long userId, BigDecimal amount, String action) {
         this.orderId = orderId;
         this.userId = userId;
         this.amount = amount;
@@ -32,11 +34,11 @@ public class PaymentCommand {
         this.userId = userId;
     }
 
-    public Double getAmount() {
+    public BigDecimal getAmount() {
         return amount;
     }
 
-    public void setAmount(Double amount) {
+    public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
 

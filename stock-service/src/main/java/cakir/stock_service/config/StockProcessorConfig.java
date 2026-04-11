@@ -12,6 +12,9 @@ public class StockProcessorConfig {
 
     @Bean
     public Consumer<StockCommand> stockProcessor(StockService stockService) {
+
+        System.out.println("LOG: Bir mesaj yakaladım!");
+
         return command -> {
             if ("RESERVE_STOCK".equals(command.getAction())) {
                 stockService.handleStockReserve(command);

@@ -2,7 +2,10 @@ package cakir.saga_orchestrator.model.dto;
 
 public class StockCommand {
     private Long orderId;
-    private String action; // RESERVE_STOCK, RELEASE_STOCK (Compensating için)
+    private String action;
+    private String productId;
+    private Integer quantity;
+    private Long userId;
 
     public StockCommand() {
     }
@@ -10,6 +13,38 @@ public class StockCommand {
     public StockCommand(Long orderId, String action) {
         this.orderId = orderId;
         this.action = action;
+    }
+
+    public StockCommand(Long orderId, String action, String productId, Integer quantity, Long userId) {
+        this.orderId = orderId;
+        this.action = action;
+        this.productId = productId;
+        this.quantity = quantity;
+        this.userId = userId;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getProductId() {
+        return productId;
+    }
+
+    public void setProductId(String productId) {
+        this.productId = productId;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
     }
 
     public Long getOrderId() {

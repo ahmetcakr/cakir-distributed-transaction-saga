@@ -2,6 +2,8 @@ package cakir.stock_service.model.entity;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "stock")
 public class StockEntity {
@@ -10,6 +12,15 @@ public class StockEntity {
     private Long id;
     private String productId;
     private Integer remainingStock;
+    private BigDecimal singleUnitPrice;
+
+    public BigDecimal getSingleUnitPrice() {
+        return singleUnitPrice;
+    }
+
+    public void setSingleUnitPrice(BigDecimal singleUnitPrice) {
+        this.singleUnitPrice = singleUnitPrice;
+    }
 
     public Long getId() {
         return id;

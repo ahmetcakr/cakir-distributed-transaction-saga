@@ -1,0 +1,31 @@
+server:
+  port: 6002
+
+spring:
+  application:
+    name: payment-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payment_db
+    username: user
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  cloud:
+    function:
+      definition: paymentProcessor
+    stream:
+      bindings:
+        paymentProcessor-in-0:
+          destination: payment-commands
+          group: payment-service-group
+        paymentResponse-out-0:
+          destination: payment-events
+      kafka:
+        binder:
+          brokers: localhost:9092

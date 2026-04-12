@@ -6,6 +6,7 @@ import cakir.saga_orchestrator.repository.SagaInstanceRepository;
 import cakir.saga_orchestrator.service.SagaInstanceService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -20,20 +21,34 @@ public class SagaInstanceServiceImpl implements SagaInstanceService {
     }
 
     @Override
-    public void saveSagaState(Long orderId, String state, String status) {
-        SagaInstanceEntity instance = new SagaInstanceEntity(orderId, state, status);
+    public boolean saveSagaState(Long orderId, String idempotencyKey, String state, String status) {
+        if (!StringUtils.hasText(idempotencyKey)) {
+            throw new IllegalArgumentException("idempotencyKey is required for saga state creation");
+        }
+
+        if (sagaInstanceRepository.findByIdempotencyKey(idempotencyKey).isPresent()) {
+            log.info("Duplicate ORDER_CREATED ignored. Saga already exists for idempotencyKey: {}", idempotencyKey);
+            return false;
+        }
+
+        SagaInstanceEntity instance = new SagaInstanceEntity(idempotencyKey, orderId, state, status);
         sagaInstanceRepository.save(instance);
 
-        log.info("Saga durumu kaydedildi -> Order: {} | State: {} | Status: {}", orderId, state, status);
+        log.info("Saga durumu kaydedildi -> Key: {} | Order: {} | State: {} | Status: {}", idempotencyKey, orderId, state, status);
+        return true;
     }
 
     @Override
-    public void updateSagaState(Long orderId, String lastState, String result) {
-        SagaInstanceEntity sagaInstance = sagaInstanceRepository.findById(orderId)
-                .orElse(new SagaInstanceEntity(orderId));
+    public void updateSagaState(String idempotencyKey, String lastState, String result) {
+        if (!StringUtils.hasText(idempotencyKey)) {
+            throw new IllegalArgumentException("idempotencyKey is required for saga state update");
+        }
+
+        SagaInstanceEntity sagaInstance = sagaInstanceRepository.findByIdempotencyKey(idempotencyKey)
+                .orElseThrow(() -> new IllegalStateException("Saga instance not found for key: " + idempotencyKey));
 
         if ("SUCCESS".equals(sagaInstance.getSagaStatus()) || "FAILED".equals(sagaInstance.getSagaStatus())) {
-            log.info("Saga zaten tamamlanmış veya başarısız durumda. Güncelleme atlandı -> Order: {} | Current Status: {}", orderId, sagaInstance.getSagaStatus());
+            log.info("Saga zaten tamamlanmış veya başarısız durumda. Güncelleme atlandı -> Key: {} | Current Status: {}", idempotencyKey, sagaInstance.getSagaStatus());
             return;
         }
 
@@ -42,17 +57,17 @@ public class SagaInstanceServiceImpl implements SagaInstanceService {
 
         sagaInstanceRepository.save(sagaInstance);
 
-        log.info("Saga durumu güncellendi -> Order: {} | Last State: {} | Result: {}", orderId, lastState, result);
+        log.info("Saga durumu güncellendi -> Key: {} | Last State: {} | Result: {}", idempotencyKey, lastState, result);
     }
 
     @Override
-    public void handleCompensatingActions(Long orderId) {
-        updateSagaState(orderId, "COMPENSATING", "FAILED");
+    public void handleCompensatingActions(Long orderId, String idempotencyKey) {
+        updateSagaState(idempotencyKey, "COMPENSATING", "FAILED");
 
-        sagaOrchestratorMessagePublisher.sendStockReleaseCommand(orderId);
+        sagaOrchestratorMessagePublisher.sendStockReleaseCommand(orderId, idempotencyKey);
 
-        log.info("Telafi işlemleri başlatıldı -> Order: {}", orderId);
+        log.info("Telafi işlemleri başlatıldı -> Key: {} | Order: {}", idempotencyKey, orderId);
 
-        sagaOrchestratorMessagePublisher.sendOrderCancelCommand(orderId);
+        sagaOrchestratorMessagePublisher.sendOrderCancelCommand(orderId, idempotencyKey);
     }
 }

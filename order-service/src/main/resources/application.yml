@@ -36,6 +36,11 @@ spring:
         orderFinalizer-in-0:
           destination: order-status-updates
           group: order-service-group
+          consumer:
+            maxAttempts: 4
+            backOffInitialInterval: 1000
+            backOffMaxInterval: 10000
+            backOffMultiplier: 2.0
       kafka:
         binder:
           brokers: localhost:9092
@@ -43,6 +48,8 @@ spring:
           orderFinalizer-in-0:
             consumer:
               startOffset: earliest
+              enableDlq: true
+              dlqName: order-status-updates.dlq
 
   datasource:
     url: jdbc:postgresql://localhost:5432/order_db

@@ -22,7 +22,8 @@ public class OrderMessagePublisher {
                 "ORDER_CREATED",
                 orderEntity.getProductId(),
                 orderEntity.getQuantity(),
-                orderEntity.getUserId()));
+            orderEntity.getUserId(),
+            orderEntity.getIdempotencyKey()));
 
         log.info(BINDING_NAME + " - Published ORDER_CREATED event for Order ID: " + orderEntity.getId());
     }

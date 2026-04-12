@@ -46,8 +46,18 @@ spring:
         paymentProcessor-in-0:
           destination: payment-commands
           group: payment-service-group
+          consumer:
+            maxAttempts: 4
+            backOffInitialInterval: 1000
+            backOffMaxInterval: 10000
+            backOffMultiplier: 2.0
         paymentResponse-out-0:
           destination: payment-events
       kafka:
         binder:
           brokers: localhost:9092
+        bindings:
+          paymentProcessor-in-0:
+            consumer:
+              enableDlq: true
+              dlqName: payment-commands.dlq

@@ -35,11 +35,21 @@ spring:
           content-type: application/json
           destination: stock-commands
           group: stock-service-group
+          consumer:
+            maxAttempts: 4
+            backOffInitialInterval: 1000
+            backOffMaxInterval: 10000
+            backOffMultiplier: 2.0
         stockResponse-out-0:
           destination: stock-events
       kafka:
         binder:
           brokers: localhost:9092
+        bindings:
+          stockProcessor-in-0:
+            consumer:
+              enableDlq: true
+              dlqName: stock-commands.dlq
 
   datasource:
     url: jdbc:postgresql://localhost:5432/stock_db

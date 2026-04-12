@@ -17,30 +17,30 @@ public class PaymentMessagePublisher {
         this.streamBridge = streamBridge;
     }
 
-    public void publishPaymentSuccess(Long orderId, BigDecimal amount) {
-        PaymentEvent event = new PaymentEvent(orderId, "PAYMENT_SUCCESS", amount);
+    public void publishPaymentSuccess(Long orderId, BigDecimal amount, String idempotencyKey) {
+        PaymentEvent event = new PaymentEvent(orderId, "PAYMENT_SUCCESS", amount, idempotencyKey);
         streamBridge.send(BINDING_NAME, event);
 
         log.info(BINDING_NAME + "PAYMENT_SUCCESS event published for orderId: " + orderId + " with amount: " + amount);
     }
 
-    public void publishPaymentFailed(Long orderId) {
-        PaymentEvent event = new PaymentEvent(orderId, "PAYMENT_FAILED");
+    public void publishPaymentFailed(Long orderId, String idempotencyKey) {
+        PaymentEvent event = new PaymentEvent(orderId, "PAYMENT_FAILED", idempotencyKey);
 
         streamBridge.send(BINDING_NAME, event);
 
         log.info(BINDING_NAME + "PAYMENT_FAILED event published for orderId: " + orderId);
     }
 
-    public void publishRefundSuccess(Long orderId) {
-        PaymentEvent event = new PaymentEvent(orderId, "REFUND_SUCCESS");
+    public void publishRefundSuccess(Long orderId, String idempotencyKey) {
+        PaymentEvent event = new PaymentEvent(orderId, "REFUND_SUCCESS", idempotencyKey);
         streamBridge.send(BINDING_NAME, event);
 
         log.info(BINDING_NAME + "REFUND_SUCCESS event published for orderId: " + orderId);
     }
 
-    public void publishRefundFailed(Long orderId) {
-        PaymentEvent event = new PaymentEvent(orderId, "REFUND_FAILED");
+    public void publishRefundFailed(Long orderId, String idempotencyKey) {
+        PaymentEvent event = new PaymentEvent(orderId, "REFUND_FAILED", idempotencyKey);
         streamBridge.send(BINDING_NAME, event);
 
         log.info(BINDING_NAME + "REFUND_FAILED event published for orderId: " + orderId);

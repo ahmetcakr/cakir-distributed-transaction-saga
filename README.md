@@ -48,6 +48,20 @@ Stock Service (6004)  Payment Service (6002)
 | `payment-events`       | payment-service    | saga-orchestrator  |
 | `order-status-updates` | saga-orchestrator  | order-service      |
 
+### Retry and DLQ Topics
+
+Consumer bindings use retry with exponential backoff (`maxAttempts=4`, initial `1s`, max `10s`, multiplier `2.0`).
+If processing still fails after retries, message is sent to a Dead Letter Queue topic:
+
+| Main Topic             | DLQ Topic                    |
+|------------------------|------------------------------|
+| `order-events`         | `order-events.dlq`           |
+| `stock-events`         | `stock-events.dlq`           |
+| `payment-events`       | `payment-events.dlq`         |
+| `stock-commands`       | `stock-commands.dlq`         |
+| `payment-commands`     | `payment-commands.dlq`       |
+| `order-status-updates` | `order-status-updates.dlq`   |
+
 ---
 
 ## Services

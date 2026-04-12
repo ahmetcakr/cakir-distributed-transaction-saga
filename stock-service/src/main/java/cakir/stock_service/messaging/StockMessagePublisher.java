@@ -17,22 +17,22 @@ public class StockMessagePublisher {
         this.streamBridge = streamBridge;
     }
 
-    public void publishStockReserved(Long orderId, BigDecimal totalAmount, Long userId) {
-        StockEvent event = new StockEvent(orderId, "STOCK_RESERVED", totalAmount, userId);
+    public void publishStockReserved(Long orderId, BigDecimal totalAmount, Long userId, String idempotencyKey) {
+        StockEvent event = new StockEvent(orderId, "STOCK_RESERVED", totalAmount, userId, idempotencyKey);
         streamBridge.send(BINDING_NAME, event);
 
         log.info("Published STOCK_RESERVED event for orderId: {}, totalAmount: {}, userId: {}", orderId, totalAmount, userId);
     }
 
-    public void publishStockReleased(Long orderId, BigDecimal totalAmount, Long userId) {
-        StockEvent event = new StockEvent(orderId, "STOCK_RELEASED", totalAmount, userId);
+    public void publishStockReleased(Long orderId, BigDecimal totalAmount, Long userId, String idempotencyKey) {
+        StockEvent event = new StockEvent(orderId, "STOCK_RELEASED", totalAmount, userId, idempotencyKey);
         streamBridge.send(BINDING_NAME, event);
 
         log.info("Published STOCK_RELEASED event for orderId: {}, totalAmount: {}, userId: {}", orderId, totalAmount, userId);
     }
 
-    public void publishStockError(Long orderId, String status) {
-        StockEvent event = new StockEvent(orderId, status);
+    public void publishStockError(Long orderId, String status, String idempotencyKey) {
+        StockEvent event = new StockEvent(orderId, status, idempotencyKey);
         streamBridge.send(BINDING_NAME, event);
 
         log.info("Published {} event for orderId: {}", status, orderId);

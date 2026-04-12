@@ -3,11 +3,16 @@ package cakir.saga_orchestrator.model.entity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 
 @Entity
 @Table(name = "saga_instances")
 public class SagaInstanceEntity {
     @Id
+    @Column(name = "idempotency_key", length = 100)
+    private String idempotencyKey;
+
+    @Column(name = "order_id", nullable = false, unique = true)
     private Long orderId;
 
     private String lastState;
@@ -17,14 +22,24 @@ public class SagaInstanceEntity {
     public SagaInstanceEntity() {
     }
 
-    public SagaInstanceEntity(Long orderId) {
+    public SagaInstanceEntity(String idempotencyKey, Long orderId) {
+        this.idempotencyKey = idempotencyKey;
         this.orderId = orderId;
     }
 
-    public SagaInstanceEntity(Long orderId, String lastState, String sagaStatus) {
+    public SagaInstanceEntity(String idempotencyKey, Long orderId, String lastState, String sagaStatus) {
+        this.idempotencyKey = idempotencyKey;
         this.orderId = orderId;
         this.lastState = lastState;
         this.sagaStatus = sagaStatus;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 
     public Long getOrderId() {

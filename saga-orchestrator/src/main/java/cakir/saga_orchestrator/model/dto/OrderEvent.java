@@ -9,28 +9,32 @@ public class OrderEvent {
     private Integer quantity;
     private BigDecimal price;
     private Long userId;
+    private String idempotencyKey;
 
     public OrderEvent() {
     }
 
-    public OrderEvent(Long orderId, String orderStatus) {
+    public OrderEvent(Long orderId, String orderStatus, String idempotencyKey) {
         this.orderId = orderId;
         this.orderStatus = orderStatus;
+        this.idempotencyKey = idempotencyKey;
     }
 
-    public OrderEvent(Long orderId, String orderStatus, BigDecimal price) {
+    public OrderEvent(Long orderId, String orderStatus, BigDecimal price, String idempotencyKey) {
         this.orderId = orderId;
         this.orderStatus = orderStatus;
         this.price = price;
+        this.idempotencyKey = idempotencyKey;
     }
 
-    public OrderEvent(Long orderId, String orderStatus, String productId, Integer quantity, BigDecimal price, Long userId) {
+    public OrderEvent(Long orderId, String orderStatus, String productId, Integer quantity, BigDecimal price, Long userId, String idempotencyKey) {
         this.orderId = orderId;
         this.orderStatus = orderStatus;
         this.productId = productId;
         this.quantity = quantity;
         this.price = price;
         this.userId = userId;
+        this.idempotencyKey = idempotencyKey;
     }
 
     public String getProductId() {
@@ -79,5 +83,13 @@ public class OrderEvent {
 
     public void setOrderStatus(String orderStatus) {
         this.orderStatus = orderStatus;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 }

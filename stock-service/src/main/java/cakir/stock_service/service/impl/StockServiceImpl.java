@@ -28,12 +28,12 @@ public class StockServiceImpl implements StockService {
         StockEntity stockEntity = stockRepository.findByProductId(command.getProductId()).orElse(null);
 
         if (stockEntity == null) {
-            publisher.publishStockError(command.getOrderId(), "STOCK_NOT_FOUND");
+            publisher.publishStockError(command.getOrderId(), "STOCK_NOT_FOUND", command.getIdempotencyKey());
             return;
         }
 
         if (stockEntity.getRemainingStock() < command.getQuantity()) {
-            publisher.publishStockError(command.getOrderId(), "INSUFFICIENT_STOCK");
+            publisher.publishStockError(command.getOrderId(), "INSUFFICIENT_STOCK", command.getIdempotencyKey());
             return;
         }
 
@@ -45,7 +45,7 @@ public class StockServiceImpl implements StockService {
 
         log.info("Stock reserved. Order ID: {}, Product ID: {}, Quantity: {}, Remaining Stock: {}", command.getOrderId(), command.getProductId(), command.getQuantity(), newRemainingStock);
 
-        publisher.publishStockReserved(command.getOrderId(), totalAmount, command.getUserId());
+        publisher.publishStockReserved(command.getOrderId(), totalAmount, command.getUserId(), command.getIdempotencyKey());
     }
 
     @Override
@@ -54,7 +54,7 @@ public class StockServiceImpl implements StockService {
         StockEntity stockEntity = stockRepository.findByProductId(command.getProductId()).orElse(null);
 
         if (stockEntity == null) {
-            publisher.publishStockError(command.getOrderId(), "STOCK_NOT_FOUND");
+            publisher.publishStockError(command.getOrderId(), "STOCK_NOT_FOUND", command.getIdempotencyKey());
             return;
         }
 
@@ -66,6 +66,6 @@ public class StockServiceImpl implements StockService {
 
         log.info("Stock released. Order ID: {}, Product ID: {}, Quantity: {}, Remaining Stock: {}", command.getOrderId(), command.getProductId(), command.getQuantity(), newRemainingStock);
 
-        publisher.publishStockReleased(command.getOrderId(), totalAmount, command.getUserId());
+        publisher.publishStockReleased(command.getOrderId(), totalAmount, command.getUserId(), command.getIdempotencyKey());
     }
 }

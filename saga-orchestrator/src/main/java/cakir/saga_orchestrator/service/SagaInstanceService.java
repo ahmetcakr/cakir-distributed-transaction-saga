@@ -1,9 +1,9 @@
 package cakir.saga_orchestrator.service;
 
 public interface SagaInstanceService {
-    void saveSagaState(Long orderId, String state, String status);
+    boolean saveSagaState(Long orderId, String idempotencyKey, String state, String status);
 
-    void updateSagaState(Long orderId, String lastState, String result);
+    void updateSagaState(String idempotencyKey, String lastState, String result);
 
-    void handleCompensatingActions(Long orderId);
+    void handleCompensatingActions(Long orderId, String idempotencyKey);
 }

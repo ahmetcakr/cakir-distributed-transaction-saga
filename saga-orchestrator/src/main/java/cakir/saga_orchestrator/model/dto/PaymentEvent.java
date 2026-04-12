@@ -6,19 +6,22 @@ public class PaymentEvent {
     private Long orderId;
     private String status;
     private BigDecimal price;
+    private String idempotencyKey;
 
     public PaymentEvent() {
     }
 
-    public PaymentEvent(Long orderId, String status) {
+    public PaymentEvent(Long orderId, String status, String idempotencyKey) {
         this.orderId = orderId;
         this.status = status;
+        this.idempotencyKey = idempotencyKey;
     }
 
-    public PaymentEvent(Long orderId, String status, BigDecimal price) {
+    public PaymentEvent(Long orderId, String status, BigDecimal price, String idempotencyKey) {
         this.orderId = orderId;
         this.status = status;
         this.price = price;
+        this.idempotencyKey = idempotencyKey;
     }
 
     public BigDecimal getPrice() {
@@ -43,5 +46,13 @@ public class PaymentEvent {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 }

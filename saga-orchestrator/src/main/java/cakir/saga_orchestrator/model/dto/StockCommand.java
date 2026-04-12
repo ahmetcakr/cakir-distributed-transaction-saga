@@ -6,21 +6,24 @@ public class StockCommand {
     private String productId;
     private Integer quantity;
     private Long userId;
+    private String idempotencyKey;
 
     public StockCommand() {
     }
 
-    public StockCommand(Long orderId, String action) {
+    public StockCommand(Long orderId, String action, String idempotencyKey) {
         this.orderId = orderId;
         this.action = action;
+        this.idempotencyKey = idempotencyKey;
     }
 
-    public StockCommand(Long orderId, String action, String productId, Integer quantity, Long userId) {
+    public StockCommand(Long orderId, String action, String productId, Integer quantity, Long userId, String idempotencyKey) {
         this.orderId = orderId;
         this.action = action;
         this.productId = productId;
         this.quantity = quantity;
         this.userId = userId;
+        this.idempotencyKey = idempotencyKey;
     }
 
     public Long getUserId() {
@@ -61,5 +64,13 @@ public class StockCommand {
 
     public void setAction(String action) {
         this.action = action;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 }

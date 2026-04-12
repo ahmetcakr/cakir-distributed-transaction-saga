@@ -7,15 +7,17 @@ public class PaymentCommand {
     private Long userId;
     private BigDecimal amount;
     private String action;
+    private String idempotencyKey;
 
     public PaymentCommand() {
     }
 
-    public PaymentCommand(Long orderId, Long userId, BigDecimal amount, String action) {
+    public PaymentCommand(Long orderId, Long userId, BigDecimal amount, String action, String idempotencyKey) {
         this.orderId = orderId;
         this.userId = userId;
         this.amount = amount;
         this.action = action;
+        this.idempotencyKey = idempotencyKey;
     }
 
     public Long getOrderId() {
@@ -48,5 +50,13 @@ public class PaymentCommand {
 
     public void setAction(String action) {
         this.action = action;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 }

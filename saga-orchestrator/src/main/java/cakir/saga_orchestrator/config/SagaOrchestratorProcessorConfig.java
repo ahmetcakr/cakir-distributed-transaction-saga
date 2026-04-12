@@ -28,7 +28,15 @@ public class SagaOrchestratorProcessorConfig {
             log.info(event.getOrderStatus() + " orderEvent received for orderId: {}", event.getOrderId());
 
             if ("ORDER_CREATED".equals(event.getOrderStatus())) {
-                sagaInstanceService.saveSagaState(event.getOrderId(), "ORDER_CREATED", "PROCESSING");
+                boolean created = sagaInstanceService.saveSagaState(
+                        event.getOrderId(),
+                        event.getIdempotencyKey(),
+                        "ORDER_CREATED",
+                        "PROCESSING");
+
+                if (!created) {
+                    return;
+                }
 
                 publisher.sendStockReserveCommand(event);
             }
@@ -41,17 +49,17 @@ public class SagaOrchestratorProcessorConfig {
             log.info(event.getOrderStatus() + " stockEvent received for orderId: {}", event.getOrderId());
 
             if ("STOCK_RESERVED".equals(event.getOrderStatus())) {
-                sagaInstanceService.updateSagaState(event.getOrderId(), "STOCK_RESERVED", "PROCESSING");
+                sagaInstanceService.updateSagaState(event.getIdempotencyKey(), "STOCK_RESERVED", "PROCESSING");
 
                 publisher.sendPaymentCommand(event);
             } else if ("STOCK_RELEASED".equals(event.getOrderStatus())) {
-                sagaInstanceService.updateSagaState(event.getOrderId(), "STOCK_RELEASED", "FAILED");
+                sagaInstanceService.updateSagaState(event.getIdempotencyKey(), "STOCK_RELEASED", "FAILED");
 
-                publisher.sendPaymentFailCommand(event.getOrderId(),  event.getPrice());
+                publisher.sendPaymentFailCommand(event.getOrderId(), event.getPrice(), event.getIdempotencyKey());
             } else if ("STOCK_NOT_FOUND".equals(event.getOrderStatus()) || "INSUFFICIENT_STOCK".equals(event.getOrderStatus())) {
-                sagaInstanceService.updateSagaState(event.getOrderId(), "STOCK_FAILED", "FAILED");
+                sagaInstanceService.updateSagaState(event.getIdempotencyKey(), "STOCK_FAILED", "FAILED");
 
-                publisher.sendPaymentFailCommand(event.getOrderId(),  event.getPrice());
+                publisher.sendPaymentFailCommand(event.getOrderId(), event.getPrice(), event.getIdempotencyKey());
             }
         };
     }
@@ -61,11 +69,11 @@ public class SagaOrchestratorProcessorConfig {
             log.info(event.getStatus() + " paymentEvent received for orderId: {}", event.getOrderId());
 
             if ("PAYMENT_SUCCESS".equals(event.getStatus())) {
-                sagaInstanceService.updateSagaState(event.getOrderId(), "PAYMENT_COMPLETED", "SUCCESS");
+                sagaInstanceService.updateSagaState(event.getIdempotencyKey(), "PAYMENT_COMPLETED", "SUCCESS");
 
-                publisher.sendOrderCompleteCommand(event.getOrderId(), event.getPrice());
+                publisher.sendOrderCompleteCommand(event.getOrderId(), event.getPrice(), event.getIdempotencyKey());
             } else if ("PAYMENT_FAILED".equals(event.getStatus())) {
-                sagaInstanceService.handleCompensatingActions(event.getOrderId());
+                sagaInstanceService.handleCompensatingActions(event.getOrderId(), event.getIdempotencyKey());
             }
         };
     }

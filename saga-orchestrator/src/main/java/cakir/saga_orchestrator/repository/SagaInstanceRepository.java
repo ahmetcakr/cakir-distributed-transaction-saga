@@ -7,6 +7,8 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface SagaInstanceRepository extends JpaRepository<SagaInstanceEntity, Long> {
+public interface SagaInstanceRepository extends JpaRepository<SagaInstanceEntity, String> {
     Optional<SagaInstanceEntity> findByOrderId(Long orderId);
+
+    Optional<SagaInstanceEntity> findByIdempotencyKey(String idempotencyKey);
 }

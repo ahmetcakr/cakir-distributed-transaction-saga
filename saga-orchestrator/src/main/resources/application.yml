@@ -26,6 +26,10 @@ logging:
 spring:
   application:
     name: saga-orchestrator
+  data:
+    redis:
+      host: localhost
+      port: 6379
   datasource:
     url: jdbc:postgresql://localhost:5432/saga_db
     username: user
@@ -94,3 +98,10 @@ spring:
             consumer:
               enableDlq: true
               dlqName: payment-events.dlq
+
+app:
+  redis-lock:
+    key-prefix: saga-orchestrator
+    wait-timeout: 2s
+    lease-time: 10s
+    retry-interval: 50ms

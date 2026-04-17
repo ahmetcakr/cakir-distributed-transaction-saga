@@ -1,0 +1,68 @@
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,prometheus,metrics,loggers"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: "http://localhost:9411/api/v2/spans"
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 1500
+        response-timeout: 5s
+      default-filters:
+        - RemoveRequestHeader=Cookie
+      routes:
+        - id: order-service-route
+          uri: http://localhost:6001
+          predicates:
+            - Path=/api/orders/**
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                methods: GET
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                backoff:
+                  firstBackoff: 200ms
+                  maxBackoff: 2s
+                  factor: 2
+                  basedOnPreviousValue: true
+            - name: CircuitBreaker
+              args:
+                name: orderServiceCircuitBreaker
+                fallbackUri: forward:/fallback/order-service
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      orderServiceCircuitBreaker:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 20s
+        permittedNumberOfCallsInHalfOpenState: 5
+  timelimiter:
+    instances:
+      orderServiceCircuitBreaker:
+        timeoutDuration: 4s

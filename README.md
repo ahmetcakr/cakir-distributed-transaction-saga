@@ -6,12 +6,15 @@ A demonstration of the **Orchestration-based Saga Pattern** for managing distrib
 
 ## Architecture
 
-The system consists of **4 independent Spring Boot microservices**, each with its own PostgreSQL database. Services communicate exclusively via **Apache Kafka** — there are no direct HTTP calls between them.
+The system consists of **5 independent Spring Boot services** (including an API Gateway), each business service with its own PostgreSQL database. Services communicate internally via **Apache Kafka** — clients call only the gateway.
 
 ```
 Client
   │
-  ▼ REST POST /orders
+  ▼ REST POST /api/orders
+Gateway Service (8080)
+  │ routes to
+  ▼
 Order Service (6001)
   │ publishes ORDER_CREATED
   ▼
@@ -66,8 +69,15 @@ If processing still fails after retries, message is sent to a Dead Letter Queue 
 
 ## Services
 
+### Gateway Service — port `8080`
+- Single public entry point for clients
+- Routes `/api/orders/**` to `order-service`
+- Adds/propagates `X-Correlation-Id`
+- Requires `X-Idempotency-Key` for `POST /api/orders`
+- Provides retry + circuit breaker + fallback response for order route
+
 ### Order Service — port `6001`
-- Exposes `POST /orders` to create a new order
+- Exposes `POST /api/orders` to create a new order
 - Saves the order in `PENDING` state to `order_db`
 - Publishes `ORDER_CREATED` to `order-events`
 - Listens on `order-status-updates` and finalizes the order as `COMPLETED`, `CANCELLED`, or `FAILED`
@@ -119,6 +129,7 @@ STOCK_NOT_FOUND / STOCK_INSUFFICIENT → ORDER_FAILED (no compensation needed)
 | Apache Kafka | Async inter-service messaging |
 | Zookeeper | Kafka coordination |
 | PostgreSQL 15 | Per-service relational databases |
+| Redis 7 | Distributed locking and cross-instance concurrency control |
 | Spring Data JPA / Hibernate | ORM and database access |
 | Lombok | Boilerplate reduction |
 | Maven | Build tool |
@@ -131,6 +142,7 @@ STOCK_NOT_FOUND / STOCK_INSUFFICIENT → ORDER_FAILED (no compensation needed)
 ```
 cakir-distributed-transaction-saga/
 ├── docker-compose.yml          # Kafka, Zookeeper, PostgreSQL
+├── gateway-service/
 ├── order-service/
 ├── payment-service/
 ├── stock-service/
@@ -171,6 +183,15 @@ This starts:
 - Kafka on `localhost:9092`
 - Zookeeper on `localhost:2181`
 - PostgreSQL on `localhost:5432` (user: `user`, password: `password`)
+- Redis on `localhost:6379`
+
+### Distributed Locking
+
+Critical write paths use Redis-based distributed locks (token + TTL + safe unlock Lua script) to prevent cross-instance race conditions:
+- order-service: `order:create:{idempotencyKey}`
+- stock-service: `stock:reserve:{idempotencyKey}`, `stock:release:{idempotencyKey}`
+- payment-service: `payment:process:{idempotencyKey}`, `payment:refund:{idempotencyKey}`
+- saga-orchestrator: `saga:create:{idempotencyKey}`, `saga:update:{idempotencyKey}`, `saga:compensate:{idempotencyKey}`
 
 ### 2. Create Databases
 
@@ -185,9 +206,10 @@ CREATE DATABASE saga_db;
 
 ### 3. Run the Services
 
-Start each service in a separate terminal (order matters — start the orchestrator before the others):
+Start each service in a separate terminal:
 
 ```bash
+cd gateway-service  && ./mvnw spring-boot:run
 cd saga-orchestrator && ./mvnw spring-boot:run
 cd order-service    && ./mvnw spring-boot:run
 cd stock-service    && ./mvnw spring-boot:run
@@ -197,10 +219,13 @@ cd payment-service  && ./mvnw spring-boot:run
 ### 4. Create an Order
 
 ```bash
-curl -X POST http://localhost:6001/orders \
+curl -X POST http://localhost:8080/api/orders \
   -H "Content-Type: application/json" \
+  -H "X-Idempotency-Key: test-order-001" \
   -d '{"productId": "PROD-1", "quantity": 2, "userId": 1}'
 ```
+
+If `X-Idempotency-Key` is missing, gateway returns `400 Bad Request`.
 
 ---
 

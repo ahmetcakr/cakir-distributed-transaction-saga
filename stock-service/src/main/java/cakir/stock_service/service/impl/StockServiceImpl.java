@@ -1,5 +1,6 @@
 package cakir.stock_service.service.impl;
 
+import cakir.stock_service.lock.RedisDistributedLockService;
 import cakir.stock_service.messaging.StockMessagePublisher;
 import cakir.stock_service.model.dto.StockCommand;
 import cakir.stock_service.model.entity.StockEntity;
@@ -8,6 +9,7 @@ import cakir.stock_service.service.StockService;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 
@@ -16,56 +18,74 @@ import java.math.BigDecimal;
 public class StockServiceImpl implements StockService {
     private final StockRepository stockRepository;
     private final StockMessagePublisher publisher;
+    private final RedisDistributedLockService lockService;
 
-    public StockServiceImpl(StockRepository stockRepository, StockMessagePublisher publisher) {
+    public StockServiceImpl(StockRepository stockRepository,
+                            StockMessagePublisher publisher,
+                            RedisDistributedLockService lockService) {
         this.stockRepository = stockRepository;
         this.publisher = publisher;
+        this.lockService = lockService;
     }
 
     @Override
     @Transactional
     public void handleStockReserve(StockCommand command) {
-        StockEntity stockEntity = stockRepository.findByProductId(command.getProductId()).orElse(null);
-
-        if (stockEntity == null) {
-            publisher.publishStockError(command.getOrderId(), "STOCK_NOT_FOUND", command.getIdempotencyKey());
-            return;
+        if (!StringUtils.hasText(command.getIdempotencyKey())) {
+            throw new IllegalArgumentException("idempotencyKey is required for stock reserve processing");
         }
 
-        if (stockEntity.getRemainingStock() < command.getQuantity()) {
-            publisher.publishStockError(command.getOrderId(), "INSUFFICIENT_STOCK", command.getIdempotencyKey());
-            return;
-        }
+        lockService.executeWithLock("stock:reserve:" + command.getIdempotencyKey(), () -> {
+            StockEntity stockEntity = stockRepository.findByProductId(command.getProductId()).orElse(null);
 
-        BigDecimal totalAmount = stockEntity.getSingleUnitPrice().multiply(BigDecimal.valueOf(command.getQuantity()));
+            if (stockEntity == null) {
+                publisher.publishStockError(command.getOrderId(), "STOCK_NOT_FOUND", command.getIdempotencyKey());
+                return null;
+            }
 
-        Integer newRemainingStock = stockEntity.getRemainingStock() - command.getQuantity();
-        stockEntity.setRemainingStock(newRemainingStock);
-        stockRepository.save(stockEntity);
+            if (stockEntity.getRemainingStock() < command.getQuantity()) {
+                publisher.publishStockError(command.getOrderId(), "INSUFFICIENT_STOCK", command.getIdempotencyKey());
+                return null;
+            }
 
-        log.info("Stock reserved. Order ID: {}, Product ID: {}, Quantity: {}, Remaining Stock: {}", command.getOrderId(), command.getProductId(), command.getQuantity(), newRemainingStock);
+            BigDecimal totalAmount = stockEntity.getSingleUnitPrice().multiply(BigDecimal.valueOf(command.getQuantity()));
 
-        publisher.publishStockReserved(command.getOrderId(), totalAmount, command.getUserId(), command.getIdempotencyKey());
+            Integer newRemainingStock = stockEntity.getRemainingStock() - command.getQuantity();
+            stockEntity.setRemainingStock(newRemainingStock);
+            stockRepository.save(stockEntity);
+
+            log.info("Stock reserved. Order ID: {}, Product ID: {}, Quantity: {}, Remaining Stock: {}", command.getOrderId(), command.getProductId(), command.getQuantity(), newRemainingStock);
+
+            publisher.publishStockReserved(command.getOrderId(), totalAmount, command.getUserId(), command.getIdempotencyKey());
+            return null;
+        });
     }
 
     @Override
     @Transactional
     public void handleStockRelease(StockCommand command) {
-        StockEntity stockEntity = stockRepository.findByProductId(command.getProductId()).orElse(null);
-
-        if (stockEntity == null) {
-            publisher.publishStockError(command.getOrderId(), "STOCK_NOT_FOUND", command.getIdempotencyKey());
-            return;
+        if (!StringUtils.hasText(command.getIdempotencyKey())) {
+            throw new IllegalArgumentException("idempotencyKey is required for stock release processing");
         }
 
-        BigDecimal totalAmount = stockEntity.getSingleUnitPrice().multiply(BigDecimal.valueOf(command.getQuantity()));
+        lockService.executeWithLock("stock:release:" + command.getIdempotencyKey(), () -> {
+            StockEntity stockEntity = stockRepository.findByProductId(command.getProductId()).orElse(null);
 
-        Integer newRemainingStock = stockEntity.getRemainingStock() + command.getQuantity();
-        stockEntity.setRemainingStock(newRemainingStock);
-        stockRepository.save(stockEntity);
+            if (stockEntity == null) {
+                publisher.publishStockError(command.getOrderId(), "STOCK_NOT_FOUND", command.getIdempotencyKey());
+                return null;
+            }
 
-        log.info("Stock released. Order ID: {}, Product ID: {}, Quantity: {}, Remaining Stock: {}", command.getOrderId(), command.getProductId(), command.getQuantity(), newRemainingStock);
+            BigDecimal totalAmount = stockEntity.getSingleUnitPrice().multiply(BigDecimal.valueOf(command.getQuantity()));
 
-        publisher.publishStockReleased(command.getOrderId(), totalAmount, command.getUserId(), command.getIdempotencyKey());
+            Integer newRemainingStock = stockEntity.getRemainingStock() + command.getQuantity();
+            stockEntity.setRemainingStock(newRemainingStock);
+            stockRepository.save(stockEntity);
+
+            log.info("Stock released. Order ID: {}, Product ID: {}, Quantity: {}, Remaining Stock: {}", command.getOrderId(), command.getProductId(), command.getQuantity(), newRemainingStock);
+
+            publisher.publishStockReleased(command.getOrderId(), totalAmount, command.getUserId(), command.getIdempotencyKey());
+            return null;
+        });
     }
 }
